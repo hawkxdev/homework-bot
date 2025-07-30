@@ -8,6 +8,8 @@ import requests
 from dotenv import load_dotenv
 from telebot import TeleBot, types
 
+from exceptions import TokenNotFoundError
+
 load_dotenv()
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
@@ -32,7 +34,20 @@ logging.basicConfig(
 
 
 def check_tokens():
-    ...
+    """Проверяет доступность переменных окружения."""
+
+    if not PRACTICUM_TOKEN:
+        raise TokenNotFoundError(
+            'Отсутствует PRACTICUM_TOKEN: токен API сервиса Практикум.Домашка'
+        )
+    if not TELEGRAM_TOKEN:
+        raise TokenNotFoundError(
+            'Отсутствует TELEGRAM_TOKEN: токен телеграм бота'
+        )
+    if not TELEGRAM_CHAT_ID:
+        raise TokenNotFoundError(
+            'Отсутствует TELEGRAM_CHAT_ID: id телеграм чата'
+        )
 
 
 def send_message(bot, message):
@@ -56,7 +71,11 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
 
-    ...
+    try:
+        check_tokens()
+    except TokenNotFoundError as error:
+        logging.critical(error)
+        return
 
     # Создаем объект класса бота
     bot = ...
