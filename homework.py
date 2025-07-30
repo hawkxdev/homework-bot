@@ -33,9 +33,12 @@ logging.basicConfig(
 )
 
 
-def check_tokens():
-    """Проверяет доступность переменных окружения."""
+def check_tokens() -> None:
+    """Проверяет доступность переменных окружения.
 
+    Raises:
+        TokenNotFoundError: Если отсутствует любой из обязательных токенов.
+    """
     if not PRACTICUM_TOKEN:
         raise TokenNotFoundError(
             'Отсутствует PRACTICUM_TOKEN: токен API сервиса Практикум.Домашка'
@@ -50,8 +53,13 @@ def check_tokens():
         )
 
 
-def send_message(bot, message):
-    ...
+def send_message(bot: TeleBot, message: str) -> None:
+    """Отправляет сообщение в телеграм чат."""
+    try:
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+        logging.debug(f'Бот отправил сообщение: {message}')
+    except Exception as error:
+        logging.error(f'Сбой при отправке сообщения в Telegram: {error}')
 
 
 def get_api_answer(timestamp):
@@ -78,20 +86,24 @@ def main():
         return
 
     # Создаем объект класса бота
-    bot = ...
+    bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
 
     ...
 
     while True:
         try:
-
-            ...
+            # Получить данные от API
+            # Проверить и обработать
+            # Отправить сообщения только при новых статусах
+            if True:
+                send_message(bot, 'здесь будет текст сообщения')
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            ...
-        ...
+            logging.error(message)
+
+        time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
