@@ -2,13 +2,16 @@ import logging
 import os
 import sys
 import time
+from http import HTTPStatus
+from json import JSONDecodeError
 from logging import StreamHandler
 
 import requests
 from dotenv import load_dotenv
+from requests import Response
 from telebot import TeleBot, types
 
-from exceptions import TokenNotFoundError
+from exceptions import EndpointUnavailableError, TokenNotFoundError
 
 load_dotenv()
 
@@ -62,12 +65,38 @@ def send_message(bot: TeleBot, message: str) -> None:
         logging.error(f'Сбой при отправке сообщения в Telegram: {error}')
 
 
-def get_api_answer(timestamp):
-    ...
+def get_api_answer(timestamp: int) -> dict:
+    """Делает запрос к эндпоинту API-сервиса.
+
+    Raises:
+        EndpointUnavailableError: Если эндпоинт недоступен.
+    """
+    try:
+        response = requests.get(
+            url=ENDPOINT,
+            headers=HEADERS,
+            params={'from_date': timestamp}
+        )
+    except Exception as error:
+        logging.error(f'Сбой при запросе к эндпоинту: {error}')
+        raise
+    if response.status_code != HTTPStatus.OK:
+        msg = (f'Эндпоинт {ENDPOINT} недоступен. '
+               f'Код ответа API: {response.status_code}')
+        logging.error(msg)
+        raise EndpointUnavailableError(msg)
+    try:
+        response_dict = response.json()
+    except JSONDecodeError as error:
+        logging.error(
+            f'Ошибка преобразования JSON к типам данных Python: {error}'
+        )
+        raise
+    return response_dict
 
 
 def check_response(response):
-    ...
+    """Проверяет ответ API на соответствие документации."""
 
 
 def parse_status(homework):
@@ -93,8 +122,8 @@ def main():
 
     while True:
         try:
-            # Получить данные от API
-            # Проверить и обработать
+            response = get_api_answer(timestamp)
+            check_response(response)
             # Отправить сообщения только при новых статусах
             if True:
                 send_message(bot, 'здесь будет текст сообщения')
