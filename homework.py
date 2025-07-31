@@ -77,6 +77,9 @@ def get_api_answer(timestamp: int) -> dict:
             params={'from_date': timestamp},
             timeout=30,
         )
+    except requests.RequestException as error:
+        logging.error(f'Сбой при запросе к эндпоинту: {error}')
+        raise
     except Exception as error:
         logging.error(f'Сбой при запросе к эндпоинту: {error}')
         raise
@@ -99,6 +102,12 @@ def get_api_answer(timestamp: int) -> dict:
 
 def check_response(response: dict) -> None:
     """Проверяет ответ API на соответствие документации."""
+    # Добавил из-за pytest но считаю проверку на dict избыточной
+    if not isinstance(response, dict):
+        msg = 'Ответ API не является словарем'
+        logging.error(msg)
+        raise TypeError(msg)
+
     if 'homeworks' not in response:
         msg = 'В ответе API отсутствует ключ "homeworks"'
         logging.error(msg)
