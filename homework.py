@@ -148,7 +148,6 @@ def parse_status(homework: dict) -> str:
 
 def main():
     """Основная логика работы бота."""
-
     try:
         check_tokens()
     except TokenNotFoundError as error:
