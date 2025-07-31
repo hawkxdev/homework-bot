@@ -95,8 +95,20 @@ def get_api_answer(timestamp: int) -> dict:
     return response_dict
 
 
-def check_response(response):
+def check_response(response: dict):
     """Проверяет ответ API на соответствие документации."""
+    if 'homeworks' not in response:
+        msg = 'В ответе API отсутствует ключ "homeworks"'
+        logging.error(msg)
+        raise KeyError(msg)
+    if 'current_date' not in response:
+        msg = 'В ответе API отсутствует ключ "current_date"'
+        logging.error(msg)
+        raise KeyError(msg)
+    if not isinstance(response['homeworks'], list):
+        msg = 'Значение по ключу "homeworks" не является списком'
+        logging.error(msg)
+        raise TypeError(msg)
 
 
 def parse_status(homework):
