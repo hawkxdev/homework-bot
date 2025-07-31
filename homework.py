@@ -111,9 +111,29 @@ def check_response(response: dict):
         raise TypeError(msg)
 
 
-def parse_status(homework):
-    ...
+def parse_status(homework: dict):
+    """Извлекает из ответа API статус домашней работы."""
+    required_keys = {'id', 'status', 'homework_name', 'reviewer_comment',
+                     'date_updated', 'lesson_name'}
+    if not required_keys.issubset(homework):
+        missing = required_keys - homework.keys()
+        msg = f'В homework отсутствуют ключи: {missing}'
+        logging.error(msg)
+        raise KeyError(msg)
 
+    homework_name = homework['homework_name']
+    if not homework_name:
+        msg = f'Название домашней работы с id={homework['id']} не указано'
+        logging.error(msg)
+        raise ValueError(msg)
+
+    status = homework['status']
+    if status not in HOMEWORK_VERDICTS:
+        msg = f'Неожиданный статус домашней работы "{status}"'
+        logging.error(msg)
+        raise ValueError(msg)
+
+    verdict = HOMEWORK_VERDICTS[status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -136,6 +156,7 @@ def main():
         try:
             response = get_api_answer(timestamp)
             check_response(response)
+
             # Отправить сообщения только при новых статусах
             if True:
                 send_message(bot, 'здесь будет текст сообщения')
