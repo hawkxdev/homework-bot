@@ -79,7 +79,9 @@ def get_api_answer(timestamp: int) -> dict:
         )
     except requests.RequestException as error:
         logging.error(f'Сбой при запросе к эндпоинту: {error}')
-        raise EndpointUnavailableError(f'Сбой при запросе к эндпоинту: {error}')
+        raise EndpointUnavailableError(
+            f'Сбой при запросе к эндпоинту: {error}'
+        )
     if response.status_code != HTTPStatus.OK:
         msg = (
             f'Эндпоинт {ENDPOINT} недоступен. '
