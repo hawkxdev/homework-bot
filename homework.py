@@ -9,6 +9,8 @@ from logging import StreamHandler
 import requests
 from dotenv import load_dotenv
 from telebot import TeleBot
+from telebot.apihelper import ApiException
+from requests import RequestException
 
 from exceptions import EndpointUnavailableError, TokenNotFoundError
 
@@ -28,12 +30,6 @@ HOMEWORK_VERDICTS = {
     'rejected': 'Работа проверена: у ревьюера есть замечания.',
 }
 
-logging.basicConfig(
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    level=logging.DEBUG,
-    handlers=[StreamHandler(stream=sys.stdout)],
-)
-
 
 def check_tokens() -> None:
     """Проверяет доступность переменных окружения.
@@ -41,18 +37,17 @@ def check_tokens() -> None:
     Raises:
         TokenNotFoundError: Если отсутствует любой из обязательных токенов.
     """
+    msg = []
     if not PRACTICUM_TOKEN:
-        raise TokenNotFoundError(
+        msg.append(
             'Отсутствует PRACTICUM_TOKEN: токен API сервиса Практикум.Домашка'
         )
     if not TELEGRAM_TOKEN:
-        raise TokenNotFoundError(
-            'Отсутствует TELEGRAM_TOKEN: токен телеграм бота'
-        )
+        msg.append('Отсутствует TELEGRAM_TOKEN: токен телеграм бота')
     if not TELEGRAM_CHAT_ID:
-        raise TokenNotFoundError(
-            'Отсутствует TELEGRAM_CHAT_ID: id телеграм чата'
-        )
+        msg.append('Отсутствует TELEGRAM_CHAT_ID: id телеграм чата')
+    if msg:
+        raise TokenNotFoundError('\n'.join(msg))
 
 
 def send_message(bot: TeleBot, message: str) -> None:
@@ -60,7 +55,7 @@ def send_message(bot: TeleBot, message: str) -> None:
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.debug(f'Бот отправил сообщение: {message}')
-    except Exception as error:
+    except (ApiException, RequestException) as error:
         logging.error(f'Сбой при отправке сообщения в Telegram: {error}')
 
 
@@ -77,17 +72,16 @@ def get_api_answer(timestamp: int) -> dict:
             params={'from_date': timestamp},
             timeout=30,
         )
-    except requests.RequestException as error:
+    except RequestException as error:
         logging.error(f'Сбой при запросе к эндпоинту: {error}')
         raise EndpointUnavailableError(
             f'Сбой при запросе к эндпоинту: {error}'
-        )
+        ) from error
     if response.status_code != HTTPStatus.OK:
         msg = (
             f'Эндпоинт {ENDPOINT} недоступен. '
             f'Код ответа API: {response.status_code}'
         )
-        logging.error(msg)
         raise EndpointUnavailableError(msg)
     try:
         response_dict = response.json()
@@ -160,7 +154,7 @@ def main():
         check_tokens()
     except TokenNotFoundError as error:
         logging.critical(error)
-        return
+        sys.exit(1)
 
     bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
@@ -193,4 +187,15 @@ def main():
 
 
 if __name__ == '__main__':
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+
+    logging.basicConfig(
+        format=(
+            '%(asctime)s [%(levelname)s] %(funcName)s:%(lineno)d - %(message)s'
+        ),
+        level=logging.DEBUG,
+        handlers=[StreamHandler(stream=sys.stdout)],
+    )
+
     main()
